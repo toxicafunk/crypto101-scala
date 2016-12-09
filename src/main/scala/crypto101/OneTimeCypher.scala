@@ -31,6 +31,10 @@ object OneTimeCypher {
     def xor(bs2: Seq[Int]): Seq[Int] = (bs1 zip bs2).map(elem => elem._1 ^ elem._2)
   }
 
+  implicit class StringUtils(val xs: List[String]) {
+    def mostFrequentByte: (String, Int) = xs.groupBy(s => s).map( (elem) => elem._1 -> elem._2.length ).maxBy(_._2)
+  }
+
   def main (args: Array[String] ): Unit = {
     val cipher = OneTimeCypher(267)
 
@@ -40,18 +44,16 @@ object OneTimeCypher {
     val l = cipher.reusedKey(true)(s1, s2)
     println(s"From 2 plaintexts: $l")
 
-    val b1 = cipher.code(s1)
-    val b2 = cipher.code(s2)
+    val c1 = cipher.code(s1)
+    val c2 = cipher.code(s2)
 
-    val invPlain = cipher.reusedKey(false)(b1, b2)
+    val invPlain = cipher.reusedKey(false)(c1, c2)
     println(s"From 2 ciphertexts: $invPlain")
 
-    println(s"$b1\n$b2")
+    println(s"c1: $c1\nc2: $c2")
 
-    val m1: Map[String, Int] = cipher.helper(b1).groupBy(s => s).map( (elem) => elem._1 -> elem._2.length )
-    println(m1.maxBy(elem => elem._2))
-    val m2: Map[String, Int] = cipher.helper(b2).groupBy(s => s).map( (elem) => elem._1 -> elem._2.length )
-    println(m2.maxBy(elem => elem._2))
+    println(s"Most frequent byte c1: ${cipher.helper(c1).mostFrequentByte}")
+    println(s"Most frequent byte c2: ${cipher.helper(c2).mostFrequentByte}")
 
     println(Seq(299) xor Seq(Char.char2int(' ')))
 
@@ -60,7 +62,7 @@ object OneTimeCypher {
 
     println((cipher.helper(c).map(_.toInt) xor p.getBytes.map(Byte.byte2int(_))))
 
-    val d = cipher.decode(b1.mkString)
+    val d = cipher.decode(c1.mkString)
     println(d )
 
     println(('a' to 'z').map(Char.char2int(_)))
