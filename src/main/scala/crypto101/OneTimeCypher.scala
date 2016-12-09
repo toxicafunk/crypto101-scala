@@ -14,34 +14,69 @@ class OneTimeCypher(key: Int) {
     pat.findAllIn(s).toList
   }
 
-  def reusedKey(encode: Boolean)(p1: String, p2: String): List[Int] = {
+  def reusedKey(encode: Boolean)(p1: String, p2: String): Seq[Int] = {
     val b1 = if (encode) helper(code(p1)) else helper(p1)
     val b2 = if (encode) helper(code(p2)) else helper(p2)
-    (b1 zip b2).map(elem => elem._1.toInt ^ elem._2.toInt)
+    xor(b1.map(_.toInt), b2.map(_.toInt))
   }
+
+  def xor(s1: Seq[Int], s2: Seq[Int]): Seq[Int] = (s1 zip s2).map(elem => elem._1 ^ elem._2)
+
 }
 
 object OneTimeCypher {
   def apply(key: Int) = new OneTimeCypher(key)
 
+  implicit class BinaryUtils(val bs1: Seq[Int]) {
+    def xor(bs2: Seq[Int]): Seq[Int] = (bs1 zip bs2).map(elem => elem._1 ^ elem._2)
+  }
+
   def main (args: Array[String] ): Unit = {
+    val cipher = OneTimeCypher(267)
+
     val s1 = "This is a test"
     val s2 = "Another 1 test"
-    val cipher = OneTimeCypher(267)
+
+    val l = cipher.reusedKey(true)(s1, s2)
+    println(s"From 2 plaintexts: $l")
 
     val b1 = cipher.code(s1)
     val b2 = cipher.code(s2)
-    println(s"$b1\n$b2")
-
-    val l = cipher.reusedKey(true)(s1, s2)
-    println(l)
 
     val invPlain = cipher.reusedKey(false)(b1, b2)
-    println(invPlain)
+    println(s"From 2 ciphertexts: $invPlain")
 
-    println(invPlain.sum)
+    println(s"$b1\n$b2")
 
-    val d = cipher.decode(invPlain.mkString)
+    val m1: Map[String, Int] = cipher.helper(b1).groupBy(s => s).map( (elem) => elem._1 -> elem._2.length )
+    println(m1.maxBy(elem => elem._2))
+    val m2: Map[String, Int] = cipher.helper(b2).groupBy(s => s).map( (elem) => elem._1 -> elem._2.length )
+    println(m2.maxBy(elem => elem._2))
+
+    println(Seq(299) xor Seq(Char.char2int(' ')))
+
+    val c = "383366376383"
+    val p = "test"
+
+    println((cipher.helper(c).map(_.toInt) xor p.getBytes.map(Byte.byte2int(_))))
+
+    val d = cipher.decode(b1.mkString)
     println(d )
+
+    println(('a' to 'z').map(Char.char2int(_)))
+
+    val s3 = "Miners process transactions on the blockchain. What this really means is that miners collect all the transactions into a block and then validate and verify the information based on preset rules."
+    val s4 = "The target is self adjusting. That is, it has a bit of intelligence. In the bitcoin blockchain, the target is re-adjusted every 2 weeks so that on average, the target is achieved every 10 minutes."
+
+    val b3 = cipher.code(s3)
+    val b4 = cipher.code(s4)
+    val reuse = cipher.reusedKey(false)(b3, b4)
+    println(s"$reuse")
+    val i0 = reuse.indexOf(0)
+    println(s"Position $i0 for first text is ${cipher.helper(b3)(i0)} (${s3(i0)})")
+    println(s"Position $i0 for second text is ${cipher.helper(b4)(i0)} (${s4(i0)})")
+
+    val x = cipher.helper(b3)(i0).toInt ^ s3(i0)
+    println(s"XOR of ${cipher.helper(b3)(i0)} and ${s3(i0)} = ${x} (key)")
   }
 }
