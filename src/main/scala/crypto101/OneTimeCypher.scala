@@ -1,7 +1,7 @@
 package crypto101
 
-class OneTimeCypher(key: Int) {
-  def code(plaintext: String): String =
+class OneTimeCypher(key: Int) { // 'key' gets a setter, 'val key' creates a getter and a setter,
+  def encode(plaintext: String): String =
     plaintext.getBytes.map(_ ^ key).foldLeft("")((acc, cur) => acc + cur.toString)
 
   val pat = s".{${key.toString.length}}".r
@@ -14,9 +14,9 @@ class OneTimeCypher(key: Int) {
     pat.findAllIn(s).toList
   }
 
-  def reusedKey(encode: Boolean)(p1: String, p2: String): Seq[Int] = {
-    val b1 = if (encode) helper(code(p1)) else helper(p1)
-    val b2 = if (encode) helper(code(p2)) else helper(p2)
+  def reusedKey(applyEncode: Boolean)(p1: String, p2: String): Seq[Int] = {
+    val b1 = if (applyEncode) helper(encode(p1)) else helper(p1)
+    val b2 = if (applyEncode) helper(encode(p2)) else helper(p2)
     xor(b1.map(_.toInt), b2.map(_.toInt))
   }
 
@@ -38,17 +38,17 @@ object OneTimeCypher {
   def main (args: Array[String] ): Unit = {
     val cipher = OneTimeCypher(267)
 
-    val s1 = "This is a test"
-    val s2 = "Another 1 test"
+    val p1 = "This is a test"
+    val p2 = "Another 1 test"
 
-    val l = cipher.reusedKey(true)(s1, s2)
-    println(s"From 2 plaintexts: $l")
+    val diff1 = cipher.reusedKey(true)(p1, p2)
+    println(s"From 2 plaintexts: $diff1")
 
-    val c1 = cipher.code(s1)
-    val c2 = cipher.code(s2)
+    val c1 = cipher.encode(p1)
+    val c2 = cipher.encode(p2)
 
-    val invPlain = cipher.reusedKey(false)(c1, c2)
-    println(s"From 2 ciphertexts: $invPlain")
+    val diff2 = cipher.reusedKey(false)(c1, c2)
+    println(s"From 2 ciphertexts: $diff2")
 
     println(s"c1: $c1\nc2: $c2")
 
@@ -67,18 +67,18 @@ object OneTimeCypher {
 
     println(('a' to 'z').map(Char.char2int(_)))
 
-    val s3 = "Miners process transactions on the blockchain. What this really means is that miners collect all the transactions into a block and then validate and verify the information based on preset rules."
-    val s4 = "The target is self adjusting. That is, it has a bit of intelligence. In the bitcoin blockchain, the target is re-adjusted every 2 weeks so that on average, the target is achieved every 10 minutes."
+    val p3 = "Miners process transactions on the blockchain. What this really means is that miners collect all the transactions into a block and then validate and verify the information based on preset rules."
+    val p4 = "The target is self adjusting. That is, it has a bit of intelligence. In the bitcoin blockchain, the target is re-adjusted every 2 weeks so that on average, the target is achieved every 10 minutes."
 
-    val b3 = cipher.code(s3)
-    val b4 = cipher.code(s4)
-    val reuse = cipher.reusedKey(false)(b3, b4)
+    val c3 = cipher.encode(p3)
+    val c4 = cipher.encode(p4)
+    val reuse = cipher.reusedKey(false)(c3, c4)
     println(s"$reuse")
     val i0 = reuse.indexOf(0)
-    println(s"Position $i0 for first text is ${cipher.helper(b3)(i0)} (${s3(i0)})")
-    println(s"Position $i0 for second text is ${cipher.helper(b4)(i0)} (${s4(i0)})")
+    println(s"Position $i0 for first text is ${cipher.helper(c3)(i0)} (${p3(i0)})")
+    println(s"Position $i0 for second text is ${cipher.helper(c4)(i0)} (${p4(i0)})")
 
-    val x = cipher.helper(b3)(i0).toInt ^ s3(i0)
-    println(s"XOR of ${cipher.helper(b3)(i0)} and ${s3(i0)} = ${x} (key)")
+    val x = cipher.helper(c3)(i0).toInt ^ p3(i0)
+    println(s"XOR of ${cipher.helper(c3)(i0)} and ${p3(i0)} = ${x} (key)")
   }
 }
